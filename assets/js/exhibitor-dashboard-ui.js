@@ -41,7 +41,7 @@ function buildOverview(main) {
  stats[0]?.parentElement?.after(overview);
 }
 
-function applyView(view, { scroll = true } = {}) {
+export function applyView(view, { scroll = false } = {}) {
  const main = document.querySelector('.private-main');
  if (!main?.querySelector('#feiras-abertas')) return;
  currentView = views[view] ? view : 'overview';
@@ -72,7 +72,7 @@ function installViewNavigation(main) {
    const link = event.target.closest('[data-exhibitor-view]');
    if (!link) return;
    event.preventDefault();
-   applyView(link.dataset.exhibitorView);
+   applyView(link.dataset.exhibitorView, { scroll: true });
    document.body.classList.remove('private-menu-open');
    document.querySelector('.private-menu-toggle')?.setAttribute('aria-expanded', 'false');
   });
@@ -83,7 +83,7 @@ function installViewNavigation(main) {
    const button = event.target.closest('[data-exhibitor-view]');
    if (!button) return;
    event.preventDefault();
-   applyView(button.dataset.exhibitorView);
+   applyView(button.dataset.exhibitorView, { scroll: false });
   });
  }
 }
