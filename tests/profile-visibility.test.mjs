@@ -37,8 +37,8 @@ test('visibility toggle ignores duplicate activation while disabled',async()=>{
  assert.equal(calls,0);assert.equal(ui.button.dataset.visibility,'PRIVATE');
 });
 
-test('the full profile form payload remains separate from profile visibility',()=>{
+test('the full profile form payload remains separate from profile visibility and categories',()=>{
  const data={displayName:'Ateliê',contactName:'Ana',phone:'15999999999',city:'Sorocaba',state:'SP',bio:'Bio',instagram:'https://example.test/ana',website:'https://example.test'};
- const payload=profileUpdatePayload(data,null,{social_links:{facebook:'https://example.test/facebook'}},['category-1']);
- assert.equal(Object.hasOwn(payload,'profileVisibility'),false);assert.deepEqual(payload.categoryIds,['category-1']);assert.equal(payload.displayName,'Ateliê');assert.equal(payload.socialLinks.facebook,'https://example.test/facebook');
+ const payload=profileUpdatePayload(data,null,{social_links:{facebook:'https://example.test/facebook'}});
+ assert.equal(Object.hasOwn(payload,'profileVisibility'),false);assert.equal(Object.hasOwn(payload,'categoryIds'),false);assert.equal(payload.displayName,'Ateliê');assert.equal(payload.socialLinks.facebook,'https://example.test/facebook');
 });
