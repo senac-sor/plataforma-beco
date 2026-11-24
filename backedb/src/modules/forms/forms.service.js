@@ -12,7 +12,7 @@ export class FormsService {
   async assertEditionAdmin(editionId, principal) {
     requireBecoAdmin(principal);
     validateUuid(editionId, 'Edição');
-    const rows = await this.gateway.request(`rest/v1/fair_editions?select=id,fair_id,title,status&id=eq.${editionId}&limit=1`);
+    const rows = await this.gateway.request(`rest/v1/fair_editions?select=id,fair_id,title,status,starts_at,ends_at,registration_opens_at,registration_closes_at&id=eq.${editionId}&limit=1`);
     const edition = rows[0];
     if (!edition) throw new HttpError(404, 'FAIR_EDITION_NOT_FOUND', 'Edição não encontrada.');
     const fairs = await this.gateway.request(`rest/v1/fairs?select=id&id=eq.${edition.fair_id}&organization_id=eq.${principal.organizationId}&limit=1`);

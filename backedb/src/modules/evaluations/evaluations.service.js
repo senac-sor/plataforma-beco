@@ -16,6 +16,14 @@ const metrics = [
 
 function ids(values) { return values.join(','); }
 
+function timestamp(value) {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value !== 'string') return Number.NaN;
+  // O driver PostgreSQL pode devolver TIMESTAMPTZ como Date, enquanto o
+  // PostgREST devolve uma string ISO. Aceitamos explicitamente os dois casos.
+  return Date.parse(value.trim().replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:)/, '$1T$2'));
+}
+
 function summarize(rows) {
   const result = {};
   for (const [key, column] of metrics) {
@@ -75,10 +83,15 @@ export class EvaluationsService {
     if (!application) throw new HttpError(404, 'APPLICATION_NOT_FOUND', 'Inscrição não encontrada.');
     const edition = await this.adminEdition(application.fair_edition_id, principal);
     if (application.status !== 'CONFIRMED') throw new HttpError(409, 'ATTENDANCE_NOT_ALLOWED', 'A presença só pode ser registrada para uma participação confirmada.');
-    const fullEdition = (await this.gateway.request(`rest/v1/fair_editions?select=id,starts_at,status&id=eq.${edition.id}&limit=1`))[0];
-    if (!fullEdition || new Date(fullEdition.starts_at).getTime() > Date.now() || fullEdition.status === 'CANCELLED') {
-      throw new HttpError(409, 'EVENT_NOT_STARTED', 'A presença só pode ser registrada depois do início de um evento não cancelado.');
-    }
+    if (edition.status === 'CANCELLED') throw new HttpError(409, 'EVENT_CANCELLED', 'Não é possível registrar presença em uma edição cancelada.');
+    const startsAt = timestamp(edition.starts_at);
+    const endsAt = timestamp(edition.ends_at);
+    const nowMs = Date.now();
+    if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) throw new HttpError(409, 'INVALID_EVENT_DATE', 'As datas desta edição são inválidas. Revise os dados da edição.');
+    // Uma edição já encerrada necessariamente também já começou. Essa
+    // precedência evita bloquear o registro histórico por diferenças de
+    // representação do TIMESTAMPTZ entre PostgreSQL local e PostgREST.
+    if (endsAt > nowMs && startsAt > nowMs) throw new HttpError(409, 'EVENT_NOT_STARTED', 'A presença só pode ser registrada depois do início do evento.');
     const data = validateAttendance(input);
     const now = new Date().toISOString();
     const rows = await this.gateway.request('rest/v1/application_attendance?on_conflict=application_id', {
